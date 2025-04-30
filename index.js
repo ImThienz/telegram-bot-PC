@@ -1,6 +1,7 @@
 const { Telegraf } = require('telegraf')
 const { exec } = require('child_process');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join('config', 'PC', '.env') });
 
 const BOT_TOKEN = process.env.BOT_TOKEN
 

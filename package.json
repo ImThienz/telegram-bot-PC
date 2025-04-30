@@ -9,5 +9,21 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
-  }
+  },
+  "name": "telegram-bot-pc",
+  "version": "1.0.0",
+  "description": "https://vt.tiktok.com/ZSFpqHQJT/",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ImThienz/telegram-bot-PC.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ImThienz/telegram-bot-PC/issues"
+  },
+  "homepage": "https://github.com/ImThienz/telegram-bot-PC#readme"
 }

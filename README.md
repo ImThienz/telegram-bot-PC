@@ -18,3 +18,9 @@ https://vt.tiktok.com/ZSFpqHQJT/
 
 ### Follow me on TikTok
 https://www.tiktok.com/@juno_okyo
+
+
+## On Project, open CMD and run
+`npm init -y`  
+`npm install telegraf dotenv`  
+`node index.js`
