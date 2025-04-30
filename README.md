@@ -14,7 +14,7 @@ https://vt.tiktok.com/ZSFpqHQJT/
 3. Create a new bot using [BotFather](https://t.me/BotFather) on Telegram
 4. Copy the token and paste it in the `index.js` file
 5. Run the bot using `node index.js`
-6. Send `/tatmay` to the bot to shutdown your computer
+6. Send `/sd` or `/shutdown` to the bot to shutdown your computer
 
 ### Follow me on TikTok
 https://www.tiktok.com/@juno_okyo
@@ -24,3 +24,7 @@ https://www.tiktok.com/@juno_okyo
 `npm init -y`  
 `npm install telegraf dotenv`  
 `node index.js`
+
+## Branch:
+`main`: For PC controller  
+`GI-bot`: For auto create link giftcode Genshin Impact
