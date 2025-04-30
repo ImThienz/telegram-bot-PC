@@ -26,5 +26,5 @@ https://www.tiktok.com/@juno_okyo
 `node index.js`
 
 ## Branch:
-`main`: For PC controller  
-`GI-bot`: For auto create link giftcode Genshin Impact
+`[main]`: For PC controller  
+`[GI-bot]`: For auto create link giftcode Genshin Impact
