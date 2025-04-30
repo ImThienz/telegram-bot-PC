@@ -271,7 +271,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             uid_info = user_data.get(user_id)
 
             for code in codes:
-                if not code.isalnum() or len(code) < 8:
+                if not code.isalnum() or len(code) < 5:
                     continue  # Skip invalid codes
 
                 if uid_info:
