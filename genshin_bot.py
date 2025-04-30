@@ -15,8 +15,8 @@ import pytesseract
 from PIL import Image
 from io import BytesIO
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from config/GI-bot/.env
+load_dotenv(os.path.join('config', 'GI-bot', '.env'))
 
 # Set Tesseract path - Update this to your actual Tesseract installation path
 # Common paths:
