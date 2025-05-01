@@ -49,7 +49,7 @@ This is a forked version of the original project with the following improvements
 ### Documentation
 - Added detailed CONTRIBUTORS.md file
 - Enhanced README.md with fork information
-- Detail on [Tag release v2.0](https://github.com/ImThienz/telegram-bot-PC/releases/edit/v2.0)
+- Detail on [Tag release v2.0](https://github.com/ImThienz/telegram-bot-PC/releases/v2.0)
 
 ### Credits
 This project is based on the original work by [JUNO_OKYO](https://github.com/juno-okyo). See [CONTRIBUTORS.md](CONTRIBUTORS.md) for more information about contributors.
