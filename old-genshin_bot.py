@@ -9,15 +9,23 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from dotenv import load_dotenv
 import re
-import base64
+
+# script to send a letter from pic
+import pytesseract
+from PIL import Image
 from io import BytesIO
 
-# === SET YOUR API KEYS HERE ===
-BOT_TOKEN = "put-your-token-Genshin-here"  # Your bot token from BotFather
-OCR_SPACE_API_KEY = "put-your-orc-api-key-from-gmail"  # Your OCR Space API key
+# Load environment variables from config/GI-bot/.env
+load_dotenv(os.path.join('config', 'GI-bot', '.env'))
 
-# Check if running on PythonAnywhere
-is_pythonanywhere = 'PYTHONANYWHERE_DOMAIN' in os.environ
+# Set Tesseract path - Update this to your actual Tesseract installation path
+# Common paths:
+# C:\Program Files\Tesseract-OCR\tesseract.exe
+# C:\Program Files (x86)\Tesseract-OCR\tesseract.exe
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+# === SET YOUR BOT TOKEN HERE ===
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # Optional: Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -48,7 +56,7 @@ def detect_server(uid: str) -> str:
 # ===== Function to Scrape Genshin Codes =====
 def get_latest_genshin_codes():
     codes = set()  # Use set to avoid duplicates
-
+    
     try:
         # Source 1: Hoyolab
         hoyolab_url = "https://www.hoyolab.com/circles/2/1"
@@ -57,23 +65,23 @@ def get_latest_genshin_codes():
         }
         response = requests.get(hoyolab_url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-
+        
         # Look for code patterns in Hoyolab posts
         for post in soup.find_all('div', class_='post-content'):
             text = post.get_text()
             # Look for patterns like "CODE: XXXXXXXX" or "Gift Code: XXXXXXXX"
             potential_codes = re.findall(r'(?:CODE|Gift Code|Code):\s*([A-Z0-9]{8,})', text)
             codes.update(potential_codes)
-
+    
     except Exception as e:
         print(f"Error scraping Hoyolab: {e}")
-
+    
     try:
         # Source 2: Genshin Impact Wiki
         wiki_url = "https://genshin-impact.fandom.com/wiki/Promotional_Codes"
         response = requests.get(wiki_url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-
+        
         # Look for code tables
         for table in soup.find_all('table', class_='article-table'):
             for row in table.find_all('tr')[1:]:  # Skip header row
@@ -82,25 +90,25 @@ def get_latest_genshin_codes():
                     code = cells[0].get_text().strip()
                     if len(code) >= 8 and code.isalnum():
                         codes.add(code)
-
+    
     except Exception as e:
         print(f"Error scraping Wiki: {e}")
-
+    
     try:
         # Source 3: Genshin Impact Subreddit
         reddit_url = "https://www.reddit.com/r/Genshin_Impact/search.json?q=flair_name%3A%22Code%22&restrict_sr=1&sort=new"
         response = requests.get(reddit_url, headers=headers, timeout=10)
         data = response.json()
-
+        
         for post in data.get('data', {}).get('children', []):
             title = post['data']['title']
             # Look for codes in titles
             potential_codes = re.findall(r'[A-Z0-9]{8,}', title)
             codes.update(potential_codes)
-
+    
     except Exception as e:
         print(f"Error scraping Reddit: {e}")
-
+    
     return list(codes)
 
 # Function to generate redeem link
@@ -144,7 +152,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Get user's UID and server if set
         user_id = update.effective_user.id
         uid_info = user_data.get(user_id)
-
+        
         # Create keyboard with redeem buttons
         keyboard = []
         for code in codes:
@@ -154,7 +162,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 link = generate_redeem_link(code)
                 keyboard.append([InlineKeyboardButton(f"🎮 Redeem {code}", url=link)])
-
+        
         # Add Hoyolab button
         keyboard.append([InlineKeyboardButton("📱 Theo dõi Hoyolab", url="https://www.hoyolab.com/circles/2/1")])
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -164,7 +172,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message += "📝 Danh sách code:\n"
         for i, code in enumerate(codes, 1):
             message += f"{i}. `{code}`\n"
-
+        
         message += "\n🎮 Cách sử dụng:\n"
         message += "1️⃣ Nhấn vào nút Redeem tương ứng với code bạn muốn\n"
         message += "2️⃣ Đăng nhập tài khoản của bạn\n"
@@ -173,18 +181,18 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             message += "3️⃣ Nhập UID của bạn\n"
         message += "4️⃣ Nhấn Redeem để nhận quà\n\n"
-
+        
         message += "⚠️ Lưu ý quan trọng:\n"
         message += "• Gift code có thể hết hạn sớm\n"
         message += "• Mỗi tài khoản chỉ nhận được một lần\n"
         message += "• Vui lòng kiểm tra server trước khi nhập code\n"
         message += "• Nếu code không hoạt động, có thể đã hết hạn\n\n"
-
+        
         if not uid_info:
             message += "💡 Mẹo nhỏ:\n"
             message += "• Sử dụng /setuid <UID> để tự động điền UID\n"
             message += "• Ví dụ: /setuid 123456789\n\n"
-
+        
         message += "Chúc bạn may mắn! 🍀"
 
         await loading_message.edit_text(
@@ -224,7 +232,7 @@ async def set_uid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_code_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().upper()
     codes = [code.strip() for code in text.split('\n')]
-
+    
     base_url = "https://genshin.hoyoverse.com/en/gift"
     user_id = update.effective_user.id
     uid_info = user_data.get(user_id)
@@ -248,47 +256,14 @@ async def handle_code_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # Handle photos: OCR scan
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    photo_file = await update.message.photo[-1].get_file()
+    photo_bytes = await photo_file.download_as_bytearray()
+
     try:
-        # Get the photo file
-        photo_file = await update.message.photo[-1].get_file()
-        photo_bytes = await photo_file.download_as_bytearray()
-
-        # Convert image to base64 with proper format
-        image_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-
-        # Prepare OCR Space API request
-        url = "https://api.ocr.space/parse/image"
-        payload = {
-            "apikey": OCR_SPACE_API_KEY,
-            "base64Image": image_base64,
-            "language": "eng",
-            "OCREngine": 2,  # Use OCR Engine 2 for better accuracy
-            "filetype": "JPG"  # Specify file type
-        }
-
-        # Send request to OCR Space API
-        response = requests.post(url, data=payload)
-        result = response.json()
-
-        if result.get("IsErroredOnProcessing"):
-            error_message = result.get("ErrorMessage", "Unknown error")
-            logger.error(f"OCR Space API error: {error_message}")
-            await update.message.reply_text(
-                "❌ Lỗi khi xử lý ảnh.\n\n"
-                "Có thể do:\n"
-                "1️⃣ Ảnh không rõ nét\n"
-                "2️⃣ API key không hợp lệ\n"
-                "3️⃣ Lỗi kết nối với OCR Space\n\n"
-                "Vui lòng thử lại với ảnh rõ nét hơn hoặc gửi code dưới dạng text."
-            )
-            return
-
-        # Extract text from OCR result
-        text = ""
-        if result.get("ParsedResults"):
-            text = result["ParsedResults"][0].get("ParsedText", "").strip()
-
-        if text:
+        image = Image.open(BytesIO(photo_bytes))
+        text = pytesseract.image_to_string(image)
+        
+        if text.strip():
             # Split text into lines and process each code
             codes = [code.strip() for code in text.split('\n') if code.strip()]
             base_url = "https://genshin.hoyoverse.com/en/gift"
@@ -312,14 +287,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         f"🎁 Redeem this code:\n🔗 {link}\n\nℹ️ Use /setuid <your UID> for auto-fill next time."
                     )
         else:
-            await update.message.reply_text("⚠️ Không tìm thấy text trong ảnh. Vui lòng thử lại với ảnh rõ nét hơn.")
-
+            await update.message.reply_text("⚠️ Couldn't find any readable text in that image.")
     except Exception as e:
-        logger.error(f"Error processing photo: {e}")
-        await update.message.reply_text(
-            "❌ Có lỗi xảy ra khi xử lý ảnh.\n\n"
-            "Vui lòng thử lại hoặc gửi code dưới dạng text."
-        )
+        await update.message.reply_text(f"❌ Error processing image:\n{str(e)}")
 
 # ===== Main App Setup =====
 def main():

@@ -1,49 +1,60 @@
-# Genshin Impact Gift Code Bot
-
+# Telegram Bot Projects
 A Telegram bot that helps you redeem Genshin Impact gift codes.
 
-## Installation
+## Genshin Impact Gift Code Bot [[GI-bot](https://github.com/ImThienz/telegram-bot-PC/tree/GI-bot)]
 
-1. Clone this repository
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Install Tesseract OCR:
-   - Download from: https://github.com/UB-Mannheim/tesseract/wiki
-   - Install and note the installation path
-4. Create a `.env` file with your bot token:
-   ```
-   BOT_TOKEN=your_bot_token_here
-   ```
-5. Update the Tesseract path in `genshin_bot.py` if needed:
-   ```python
-   pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-   ```
+### 1. Local Version (old-genshin_bot.py)
+- **Environment**: Runs locally on your machine
+- **Features**:
+  - Scrapes gift codes from multiple sources (Hoyolab, Wiki, Reddit)
+  - Supports OCR for reading codes from images using Tesseract
+  - Auto-detects server based on UID
+  - Generates direct redemption links
+  - Supports development mode with auto-reload
+- **Setup**:
+  ```bash
+  # Install dependencies
+  pip install python-telegram-bot beautifulsoup4 requests python-dotenv watchdog pytesseract pillow
 
-## Usage
+  # Install Tesseract OCR
+  # Windows: Download and install from https://github.com/UB-Mannheim/tesseract/wiki
+  # Set path in code: pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-Run the bot:
-```bash
-python genshin_bot.py
-```
+  # Create .env file
+  BOT_TOKEN=your_bot_token_here
 
-For development mode with auto-reload:
-```bash
-python genshin_bot.py --dev
-```
+  # Run bot
+  python old-genshin_bot.py
+  ```
 
-## Features
+### 2. PythonAnywhere Version (genshin_bot.py)
+- **Environment**: Runs on PythonAnywhere hosting
+- **Key Differences**:
+  - Uses OCR Space API instead of local Tesseract
+  - Simplified environment setup
+  - Optimized for cloud hosting
+- **Setup**:
+  ```bash
+  # Install dependencies
+  pip install python-telegram-bot beautifulsoup4 requests
 
-- Scan gift codes from images
-- Get latest gift codes
-- Auto-fill UID and server for redemption
-- Support multiple servers (Asia, Europe, America, etc.)
+  # Set API keys directly in code
+  BOT_TOKEN = "your_bot_token_here"
+  OCR_SPACE_API_KEY = "your_ocr_space_api_key_here"
 
-## Commands
+  # Run bot
+  python genshin_bot.py
+  ```
 
-- `/start` - Show welcome message
-- `/redeem` - Get latest gift codes
-- `/setuid <your_uid>` - Set your UID for auto-fill
-- Send a photo of gift code to scan
-- Send gift code text to get redemption link
+## Security Notes
+- Never commit your bot tokens or API keys to version control
+- Use environment variables or secure configuration files
+- Keep your bot tokens private and rotate them regularly
+
+## Development
+- Both bots use the python-telegram-bot library
+- Local version includes development mode with auto-reload
+- PythonAnywhere version is optimized for cloud hosting
+
+## License
+This project is open source and available under the MIT License.
