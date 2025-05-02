@@ -283,9 +283,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
 
         # Send request to OCR Space API
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=payload) as response:
-                result = await response.json()
+        response = requests.post(url, data=payload)
+        result = response.json()
 
         if result.get("IsErroredOnProcessing"):
             error_message = result.get("ErrorMessage", "Unknown error")
