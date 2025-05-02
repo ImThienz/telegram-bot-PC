@@ -10,7 +10,7 @@ https://github.com/user-attachments/assets/6ca9fd2b-c470-4322-9f20-fb6d18e666c1
 `node index.js`
 
 ## Branch:
-`[main]`: For PC controller  
+`[PC-bot]`: For PC controller  
 `[GI-bot]`: For auto create link giftcode Genshin Impact
 
 ## Fork Information
