@@ -1,5 +1,7 @@
 # Telegram Bot Projects
 A Telegram bot that helps you redeem Genshin Impact gift codes.
+## 🎬 DEMO
+![Demo](path/gi-bot-v1.2.0.gif)
 
 ## Genshin Impact Gift Code Bot [[GI-bot](https://github.com/ImThienz/telegram-bot-PC/tree/GI-bot)]
 
