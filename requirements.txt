@@ -1,0 +1,15 @@
+python-telegram-bot==20.7
+beautifulsoup4==4.12.2
+requests==2.31.0
+aiohttp==3.9.1
+python-dotenv==1.0.0 
+
+# Ensure pip is updated
+python -m pip install --upgrade pip
+
+# Install the required modules
+pip install python-telegram-bot==20.7
+pip install beautifulsoup4==4.12.2
+pip install requests==2.31.0
+pip install aiohttp==3.9.1
+pip install python-dotenv==1.0.0

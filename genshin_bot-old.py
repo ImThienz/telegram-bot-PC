@@ -1,3 +1,7 @@
+# ========================================================
+#                    Version 1.1.1
+# ========================================================
+
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -5,41 +9,33 @@ from telegram.ext import Application, CommandHandler, ContextTypes, ApplicationB
 import logging
 import sys
 import os
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 from dotenv import load_dotenv
 import re
 import base64
 from io import BytesIO
-import asyncio
-import aiohttp
-import time
 
 # === SET YOUR API KEYS HERE ===
-BOT_TOKEN = "your_bot_token_here"
-OCR_SPACE_API_KEY = "your_ocr_space_api_key_here"  # Your OCR Space API key
+BOT_TOKEN = "put-your-token-Genshin-here"  # Your bot token from BotFather
+OCR_SPACE_API_KEY = "put-your-orc-api-key-from-gmail"  # Your OCR Space API key
 
 # Check if running on PythonAnywhere
 is_pythonanywhere = 'PYTHONANYWHERE_DOMAIN' in os.environ
 
-# Configure logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    handlers=[
-        logging.FileHandler('bot.log'),
-        logging.StreamHandler()
-    ]
-)
+# Optional: Enable logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Store user UID/server in memory (you can save to file/database later)
 user_data = {}
 
-# Cache for codes to reduce scraping frequency
-code_cache = {
-    'codes': [],
-    'last_update': 0,
-    'update_interval': 3600  # 1 hour
-}
+# File change handler for development mode
+class FileChangeHandler(FileSystemEventHandler):
+    def on_modified(self, event):
+        if event.src_path.endswith('genshin_bot.py'):
+            print("\n🔄 Code changed, restarting bot...")
+            os.execv(sys.executable, ['python'] + sys.argv)
 
 # Server detection from UID prefix
 def detect_server(uid: str) -> str:
@@ -53,64 +49,63 @@ def detect_server(uid: str) -> str:
         return "os_cht"
     return "os_asia"
 
-async def fetch_url(session, url, headers):
-    try:
-        async with session.get(url, headers=headers, timeout=10) as response:
-            return await response.text()
-    except Exception as e:
-        logger.error(f"Error fetching {url}: {e}")
-        return None
-
 # ===== Function to Scrape Genshin Codes =====
-async def get_latest_genshin_codes():
-    # Check cache first
-    current_time = time.time()
-    if current_time - code_cache['last_update'] < code_cache['update_interval']:
-        return code_cache['codes']
+def get_latest_genshin_codes():
+    codes = set()  # Use set to avoid duplicates
 
-    codes = set()
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-
-    async with aiohttp.ClientSession() as session:
+    try:
         # Source 1: Hoyolab
         hoyolab_url = "https://www.hoyolab.com/circles/2/1"
-        html = await fetch_url(session, hoyolab_url, headers)
-        if html:
-            soup = BeautifulSoup(html, "html.parser")
-            for post in soup.find_all('div', class_='post-content'):
-                text = post.get_text()
-                potential_codes = re.findall(r'(?:CODE|Gift Code|Code):\s*([A-Z0-9]{5,})', text)
-                codes.update(potential_codes)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(hoyolab_url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
 
+        # Look for code patterns in Hoyolab posts
+        for post in soup.find_all('div', class_='post-content'):
+            text = post.get_text()
+            # Look for patterns like "CODE: XXXXXXXX" or "Gift Code: XXXXXXXX"
+            potential_codes = re.findall(r'(?:CODE|Gift Code|Code):\s*([A-Z0-9]{8,})', text)
+            codes.update(potential_codes)
+
+    except Exception as e:
+        print(f"Error scraping Hoyolab: {e}")
+
+    try:
         # Source 2: Genshin Impact Wiki
         wiki_url = "https://genshin-impact.fandom.com/wiki/Promotional_Codes"
-        html = await fetch_url(session, wiki_url, headers)
-        if html:
-            soup = BeautifulSoup(html, "html.parser")
-            for table in soup.find_all('table', class_='article-table'):
-                for row in table.find_all('tr')[1:]:
-                    cells = row.find_all('td')
-                    if len(cells) >= 2:
-                        code = cells[0].get_text().strip()
-                        if len(code) >= 5 and code.isalnum():
-                            codes.add(code)
+        response = requests.get(wiki_url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        # Source 3: Official Website
-        official_url = "https://genshin.hoyoverse.com/en/news"
-        html = await fetch_url(session, official_url, headers)
-        if html:
-            soup = BeautifulSoup(html, "html.parser")
-            for article in soup.find_all(['article', 'div'], class_=['article', 'content']):
-                text = article.get_text()
-                potential_codes = re.findall(r'(?:CODE|Gift Code|Code):\s*([A-Z0-9]{5,})', text)
-                codes.update(potential_codes)
+        # Look for code tables
+        for table in soup.find_all('table', class_='article-table'):
+            for row in table.find_all('tr')[1:]:  # Skip header row
+                cells = row.find_all('td')
+                if len(cells) >= 2:
+                    code = cells[0].get_text().strip()
+                    if len(code) >= 8 and code.isalnum():
+                        codes.add(code)
 
-    # Update cache
-    code_cache['codes'] = list(codes)
-    code_cache['last_update'] = current_time
-    return code_cache['codes']
+    except Exception as e:
+        print(f"Error scraping Wiki: {e}")
+
+    try:
+        # Source 3: Genshin Impact Subreddit
+        reddit_url = "https://www.reddit.com/r/Genshin_Impact/search.json?q=flair_name%3A%22Code%22&restrict_sr=1&sort=new"
+        response = requests.get(reddit_url, headers=headers, timeout=10)
+        data = response.json()
+
+        for post in data.get('data', {}).get('children', []):
+            title = post['data']['title']
+            # Look for codes in titles
+            potential_codes = re.findall(r'[A-Z0-9]{8,}', title)
+            codes.update(potential_codes)
+
+    except Exception as e:
+        print(f"Error scraping Reddit: {e}")
+
+    return list(codes)
 
 # Function to generate redeem link
 def generate_redeem_link(code: str, uid: str = None, server: str = None) -> str:
@@ -121,19 +116,12 @@ def generate_redeem_link(code: str, uid: str = None, server: str = None) -> str:
 
 # ===== Bot Commands =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    uid_info = user_data.get(user_id)
-    if uid_info:
-        uid_text = f"\n✅ Your UID: {uid_info['uid']} (Server: {uid_info['server']})"
-    else:
-        uid_text = ""
     await update.message.reply_text(
         "🎮 Welcome to the Genshin Gift Bot!\n\n"
         "🔹 Send a gift code like `GENSHINGIFT`\n"
         "🔹 Use /redeem to get the latest gift codes and redeem them instantly.\n"
         "🔹 Send a photo of the gift code to the bot to scan it.\n"
-        "🔹 Use /setuid <your UID> to auto-fill redemption link\n"
-        f"{uid_text}\n\n"
+        "🔹 Use /setuid <your UID> to auto-fill redemption link\n\n"
         "Example:\n/setuid 858969293"
     )
 
@@ -145,7 +133,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Vui lòng đợi một chút nhé! 🎮"
         )
 
-        codes = await get_latest_genshin_codes()
+        codes = get_latest_genshin_codes()
         if not codes:
             await loading_message.edit_text(
                 "😢 Hiện tại không có gift code nào mới.\n\n"
@@ -210,7 +198,7 @@ async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     except Exception as e:
-        logger.error(f"Error in redeem function: {e}")
+        print(f"Error in redeem function: {e}")
         await update.message.reply_text(
             "❌ Có lỗi xảy ra khi tìm gift code.\n\n"
             "Bạn có thể thử:\n"
@@ -283,9 +271,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
 
         # Send request to OCR Space API
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=payload) as response:
-                result = await response.json()
+        response = requests.post(url, data=payload)
+        result = response.json()
 
         if result.get("IsErroredOnProcessing"):
             error_message = result.get("ErrorMessage", "Unknown error")
@@ -340,7 +327,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===== Main App Setup =====
 def main():
-    # Remove development mode check
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -348,6 +334,13 @@ def main():
     app.add_handler(CommandHandler("setuid", set_uid))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_code_message))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+
+    # Set up file watching in development mode
+    if '--dev' in sys.argv:
+        print("🔧 Running in development mode with auto-reload")
+        observer = Observer()
+        observer.schedule(FileChangeHandler(), path='.', recursive=False)
+        observer.start()
 
     print("✅ Bot is running... Press Ctrl+C to stop.")
     app.run_polling()
